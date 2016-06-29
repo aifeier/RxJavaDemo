@@ -13,6 +13,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.DrawableTypeRequest;
 import com.bumptech.glide.Glide;
 import com.cwf.libs.okhttplibrary.OkHttpClientManager;
 import com.cwf.libs.okhttplibrary.callback.ResultCallBack;
@@ -28,7 +29,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Observer;
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     final List<Item> itemList = gson.fromJson(jsonObject.getString("results"), new TypeToken<List<Item>>() {
                     }.getType());
 
-                    Subscriber<String> subscriber = new Subscriber<String>() {
+                    Subscriber<DrawableTypeRequest<String>> subscriber = new Subscriber<DrawableTypeRequest<String>>() {
                         @Override
                         public void onCompleted() {
 
@@ -160,19 +160,18 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         @Override
-                        public void onNext(String item) {
-                            Log.d("onNext", item);
-                            Glide.with(MainActivity.this)
-                                    .load(item)
-                                    .into(image);
+                        public void onNext(DrawableTypeRequest<String> item) {
+//                            Log.d("onNext", item);
+                            item.into(image);
                         }
                     };
 
                     Observable.from(itemList)
-                            .flatMap(new Func1<Item, Observable<String>>() {
+                            .flatMap(new Func1<Item, Observable<DrawableTypeRequest<String>>>() {
                                 @Override
-                                public Observable<String> call(Item item) {
-                                    return Observable.just(item.getUrl());
+                                public Observable<DrawableTypeRequest<String>> call(Item item) {
+                                    return Observable.just(Glide.with(MainActivity.this)
+                                            .load(item.getUrl()));
                                 }
                             })
                             .subscribe(subscriber);
