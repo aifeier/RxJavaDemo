@@ -10,7 +10,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.Toast;
 
 import com.bumptech.glide.DrawableTypeRequest;
@@ -40,6 +43,7 @@ import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private ImageView image;
+    private GridView listView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +52,24 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         image = (ImageView) findViewById(R.id.image);
+        listView = (GridView) findViewById(R.id.listview);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String url = ((MyAdapter) listView.getAdapter()).getItem(position).getUrl();
+                OkHttpClientManager.getInstance().downloadFile(url, getApplicationContext().getExternalCacheDir().getAbsolutePath(), new ResultCallBack() {
+                    @Override
+                    public void onFailure(Exception e) {
+
+                    }
+
+                    @Override
+                    public void onSuccess(String s) {
+
+                    }
+                });
+            }
+        });
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -165,8 +187,9 @@ public class MainActivity extends AppCompatActivity {
                             item.into(image);
                         }
                     };
-
+                    listView.setAdapter(new MyAdapter(itemList));
                     Observable.from(itemList)
+//                            .subscribeOn(Schedulers.io())
                             .flatMap(new Func1<Item, Observable<DrawableTypeRequest<String>>>() {
                                 @Override
                                 public Observable<DrawableTypeRequest<String>> call(Item item) {
@@ -260,4 +283,5 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         RxBus.get().unregister(this);
     }
+
 }
