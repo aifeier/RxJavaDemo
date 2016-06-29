@@ -10,13 +10,25 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
+import com.cwf.libs.okhttplibrary.OkHttpClientManager;
+import com.cwf.libs.okhttplibrary.callback.ResultCallBack;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.hwangjr.rxbus.RxBus;
 import com.hwangjr.rxbus.annotation.Subscribe;
 import com.hwangjr.rxbus.annotation.Tag;
 import com.hwangjr.rxbus.thread.EventThread;
 import com.tbruyelle.rxpermissions.RxPermissions;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import rx.Observable;
 import rx.Observer;
@@ -27,6 +39,7 @@ import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
+    private ImageView image;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
+        image = (ImageView) findViewById(R.id.image);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -119,6 +132,79 @@ public class MainActivity extends AppCompatActivity {
         RxBus.get().register(this);
         RxBus.get().post("你好！");
         RxBus.get().post(new User("ME", "Here"));
+
+        OkHttpClientManager.getInstance().get("http://gank.io/api/data/福利/100/1", new ResultCallBack() {
+            @Override
+            public void onFailure(Exception e) {
+
+            }
+
+            @Override
+            public void onSuccess(String s) {
+                try {
+                    JSONObject jsonObject = new JSONObject(s);
+
+                    Gson gson = new Gson();
+                    final List<Item> itemList = gson.fromJson(jsonObject.getString("results"), new TypeToken<List<Item>>() {
+                    }.getType());
+
+                    Subscriber<String> subscriber = new Subscriber<String>() {
+                        @Override
+                        public void onCompleted() {
+
+                        }
+
+                        @Override
+                        public void onError(Throwable e) {
+
+                        }
+
+                        @Override
+                        public void onNext(String item) {
+                            Log.d("onNext", item);
+                            Glide.with(MainActivity.this)
+                                    .load(item)
+                                    .into(image);
+                        }
+                    };
+
+                    Observable.from(itemList)
+                            .flatMap(new Func1<Item, Observable<String>>() {
+                                @Override
+                                public Observable<String> call(Item item) {
+                                    return Observable.just(item.getUrl());
+                                }
+                            })
+                            .subscribe(subscriber);
+//                    Observable.create(new Observable.OnSubscribe<String>() {
+//                        @Override
+//                        public void call(Subscriber<? super String> subscriber) {
+//                            subscriber.onNext(itemList.get(0).getUrl());
+//                            subscriber.onCompleted();
+//                        }
+//                    }).subscribe(new Observer<String>() {
+//                        @Override
+//                        public void onCompleted() {
+//
+//                        }
+//
+//                        @Override
+//                        public void onError(Throwable e) {
+//
+//                        }
+//
+//                        @Override
+//                        public void onNext(String s) {
+//                            Glide.with(MainActivity.this)
+//                                    .load(s)
+//                                    .into(image);
+//                        }
+//                    });
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     @Subscribe
